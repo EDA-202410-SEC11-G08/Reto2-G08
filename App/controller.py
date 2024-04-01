@@ -37,8 +37,9 @@ def new_controller():
     Crea una instancia del modelo
     """
     #TODO: Llamar la función del modelo que crea las estructuras de datos
-    pass
-
+    
+    return model.new_data_structs()
+    
 
 # Funciones para la carga de datos
 
@@ -47,7 +48,60 @@ def load_data(control, filename):
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    pass
+    
+    jobs=open(filename+"-jobs.csv",encoding="utf-8")
+    load_data_jobs(control,jobs)
+    
+    skills=open(filename+"-skills.csv",encoding="utf-8")
+    load_data_skills(control,skills)
+    
+    employment_type=open(filename+"-employments_types.csv",encoding="utf-8")
+    load_data_employment(control,employment_type)
+    
+    multilocation=open(filename+"-multilocations.csv",encoding="utf-8")
+    load_data_multilocation(control,multilocation)
+    
+  
+def load_data_jobs(control, jobs):
+    """
+    Carga los datos del reto
+    """
+    # TODO: Realizar la carga de datos
+    lectura=csv.DictReader(jobs,delimiter=";")
+    lectura.__next__()
+    for i in lectura:
+        model.add_data_jobs(control, i)
+            
+
+def load_data_skills(control, skills):
+    """
+    Carga los datos del reto
+    """
+    # TODO: Realizar la carga de datos
+    lectura=csv.DictReader(skills)
+    for i in lectura:
+        model.add_data_skills(control, i)    
+
+def load_data_employment(control, employment_type):
+    """
+    Carga los datos del reto
+    """
+    # TODO: Realizar la carga de datos
+    lectura=csv.DictReader(employment_type)
+    for i in lectura:
+        model.add_data_employment_types(control, i) 
+                
+
+
+def load_data_multilocation(control, multilocation):
+    """
+    Carga los datos del reto
+    """
+    # TODO: Realizar la carga de datos
+    lectura= csv.DictReader(multilocation)
+    for i in lectura:
+        model.add_data_multilocation(control,i)
+    
 
 
 # Funciones de ordenamiento

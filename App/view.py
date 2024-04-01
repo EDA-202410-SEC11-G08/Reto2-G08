@@ -29,7 +29,7 @@ from DISClib.ADT import queue as qu
 from DISClib.ADT import map as mp
 from DISClib.DataStructures import mapentry as me
 assert cf
-from tabulate import tabulate
+#from tabulate import tabulate
 import traceback
 
 """
@@ -48,7 +48,9 @@ def new_controller():
         Se crea una instancia del controlador
     """
     #TODO: Llamar la función del controlador donde se crean las estructuras de datos
-    pass
+    
+    control= controller.new_controller()
+    return control
 
 
 def print_menu():
@@ -70,7 +72,9 @@ def load_data(control):
     Carga los datos
     """
     #TODO: Realizar la carga de datos
-    pass
+    
+    controller.load_data(control,cf.data_dir+"data/small")
+    return control
 
 
 def print_data(control, id):

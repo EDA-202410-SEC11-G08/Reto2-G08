@@ -38,10 +38,7 @@ from DISClib.Algorithms.Sorting import mergesort as merg
 from DISClib.Algorithms.Sorting import quicksort as quk
 assert cf
 
-"""
-Se define la estructura de un catálogo de videos. El catálogo tendrá
-dos listas, una para los videos, otra para las categorias de los mismos.
-"""
+
 
 # Construccion de modelos
 
@@ -52,17 +49,68 @@ def new_data_structs():
     manera vacía para posteriormente almacenar la información.
     """
     #TODO: Inicializar las estructuras de datos
-    pass
+    
+    data={}
+    data["mapa_ids"]=mp.newMap(60000,maptype="CHAINING") #Estructura para guardar los datos correspondientes a los ID's 
+    data["mapa_paises"]=mp.newMap(390,maptype="PROBING") #Estructura para guardar los datos de los países
+    data["mapa_fechas"]=mp.newMap(60000,maptype="CHAINING") #
+    data["mapa_ciudades"]=mp.newMap(10000,maptype="CHAINING") #
+    
+    return data
 
 
 # Funciones para agregar informacion al modelo
 
-def add_data(data_structs, data):
+def add_data_jobs(data_structs, job):
+    """
+    Función para agregar nuevos elementos a la lista
+    """
+    #TODO: Crear la función para agregar elementos
+    
+    ids=data_structs["mapa_ids"]
+    id_job=job["id"]
+    mapa_dentro_id=mp.newMap(8)
+    
+    #Ofertas
+    mp.put(mapa_dentro_id,"oferta",job)
+    mp.put(ids,id_job,mapa_dentro_id)
+    
+    #Países
+    paises=data_structs["mapa_paises"]
+    pais_job=job["country_code"]
+    
+    #Revisa que exista el país en el mapa de países. Si se obtiene que no existe (False), se crea
+    if not mp.contains(paises,pais_job):
+        mp.put(paises,pais_job,lt.newList("ARRAY_LIST"))
+    mapi=mp.get(paises,pais_job)
+    
+    lista_paises=me.getValue(mapi)
+    lt.addLast(lista_paises,job)        
+        
+        
+        
+    
+    
+    
+def add_data_skills(data_structs, data):
     """
     Función para agregar nuevos elementos a la lista
     """
     #TODO: Crear la función para agregar elementos a una lista
     pass
+def add_data_employment_types(data_structs, data):
+    """
+    Función para agregar nuevos elementos a la lista
+    """
+    #TODO: Crear la función para agregar elementos a una lista
+    pass
+def add_data_multilocation(data_structs, data):
+    """
+    Función para agregar nuevos elementos a la lista
+    """
+    #TODO: Crear la función para agregar elementos a una lista
+    pass
+
 
 
 # Funciones para creacion de datos
@@ -98,6 +146,8 @@ def req_1(data_structs):
     Función que soluciona el requerimiento 1
     """
     # TODO: Realizar el requerimiento 1
+    
+    
     pass
 
 

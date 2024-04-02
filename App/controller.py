@@ -36,22 +36,32 @@ def new_controller():
     """
     Crea una instancia del modelo
     """
-    #TODO: Llamar la función del modelo que crea las estructuras de datos
-    
-    return model.new_data_structs()
+    #TODO: Llamar la función del modelo que crea las estructuras de datos - DONE
+
+    control = {
+        'model': None
+    }
+    control['model'] = model.new_catalog()
+    return control    
     
 
 # Funciones para la carga de datos
 
-def load_data(control, filename):
+def load_data(control, filename, memflag = True):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
     
+    start_time = get_time()
+    if memflag is True:
+        tracemalloc.start()
+        start_memory = get_memory()
+
     jobs=open(filename+"-jobs.csv",encoding="utf-8")
     load_data_jobs(control,jobs)
-    
+
+    """
     skills=open(filename+"-skills.csv",encoding="utf-8")
     load_data_skills(control,skills)
     
@@ -60,6 +70,22 @@ def load_data(control, filename):
     
     multilocation=open(filename+"-multilocations.csv",encoding="utf-8")
     load_data_multilocation(control,multilocation)
+    """
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
+    
+    # finaliza el proceso para medir memoria
+    if memflag is True:
+        stop_memory = get_memory()
+        tracemalloc.stop()
+        # calcula la diferencia de memoria
+        deltaMemory = delta_memory(stop_memory, start_memory)
+        # respuesta con los datos de tiempo y memoria
+        return deltaTime, deltaMemory
+
+    else:
+        # respuesta sin medir memoria
+        return deltaTime
     
   
 def load_data_jobs(control, jobs):
@@ -70,7 +96,7 @@ def load_data_jobs(control, jobs):
     lectura=csv.DictReader(jobs,delimiter=";")
     lectura.__next__()
     for i in lectura:
-        model.add_data_jobs(control, i)
+        model.add_data_jobs(control['model'], i)
             
 
 def load_data_skills(control, skills):
@@ -78,9 +104,9 @@ def load_data_skills(control, skills):
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    lectura=csv.DictReader(skills)
+    lectura=csv.DictReader(skills, restval= 'Desconocido', delimiter= ";", fieldnames = ['name','level','id'])
     for i in lectura:
-        model.add_data_skills(control, i)    
+        model.add_data_skills(control['model'], i)    
 
 def load_data_employment(control, employment_type):
     """
@@ -102,7 +128,11 @@ def load_data_multilocation(control, multilocation):
     for i in lectura:
         model.add_data_multilocation(control,i)
     
-
+def jobs_id_size(control):
+    """
+    Numero de libros cargados al catalogo
+    """
+    return model.jobs_id_size(control['model'])
 
 # Funciones de ordenamiento
 

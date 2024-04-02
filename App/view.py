@@ -67,14 +67,14 @@ def print_menu():
     print("0- Salir")
 
 
-def load_data(control):
+def load_data(control, memflag):
     """
     Carga los datos
     """
     #TODO: Realizar la carga de datos
     
-    controller.load_data(control,cf.data_dir+"data/small")
-    return control
+    ans = controller.load_data(control,cf.data_dir+"data/large", memflag)
+    return ans
 
 
 def print_data(control, id):
@@ -147,6 +147,24 @@ def print_req_8(control):
     # TODO: Imprimir el resultado del requerimiento 8
     pass
 
+def printLoadDataAnswer(answer):
+    """
+    Imprime los datos de tiempo y memoria de la carga de datos
+    """
+    if isinstance(answer, (list, tuple)) is True:
+        print("Tiempo [ms]: ", f"{answer[0]:.3f}", "||",
+              "Memoria [kB]: ", f"{answer[1]:.3f}")
+    else:
+        print("Tiempo [ms]: ", f"{answer:.3f}")
+        
+def castBoolean(value):
+    """
+    Convierte un valor a booleano
+    """
+    if value in ('True', 'true', 'TRUE', 'T', 't', '1', True):
+        return True
+    else:
+        return False
 
 # Se crea el controlador asociado a la vista
 control = new_controller()
@@ -163,7 +181,13 @@ if __name__ == "__main__":
         inputs = input('Seleccione una opción para continuar\n')
         if int(inputs) == 1:
             print("Cargando información de los archivos ....\n")
-            data = load_data(control)
+        
+            print("Desea observar el uso de memoria? (True/False)")
+            mem = input("Respuesta: ")
+            mem = castBoolean(mem)
+            ans = load_data(control, memflag=mem)
+            print('Libros cargados: ' + str(controller.jobs_id_size(control)))
+            printLoadDataAnswer(ans)
         elif int(inputs) == 2:
             print_req_1(control)
 

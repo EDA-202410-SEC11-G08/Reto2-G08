@@ -36,6 +36,7 @@ from DISClib.Algorithms.Sorting import insertionsort as ins
 from DISClib.Algorithms.Sorting import selectionsort as se
 from DISClib.Algorithms.Sorting import mergesort as merg
 from DISClib.Algorithms.Sorting import quicksort as quk
+from datetime import datetime as date
 assert cf
 
 
@@ -43,40 +44,58 @@ assert cf
 # Construccion de modelos
 
 
-def new_data_structs():
+def new_catalog():
     """
     Inicializa las estructuras de datos del modelo. Las crea de
     manera vacía para posteriormente almacenar la información.
     """
     #TODO: Inicializar las estructuras de datos
+    catalog = {'mapa_ids': None,
+               'mapa_paises': None,
+               'mapa_fechas': None,
+               'mapa_ciudades': None,
+               'habilidades_id': None,
+               'habilidades_name': None,
+               'Tipos': None,
+               'Multi Locaciones': None,}
     
-    data={}
-    data["mapa_ids"]=mp.newMap(60000,maptype="CHAINING") #Estructura para guardar los datos correspondientes a los ID's 
-    data["mapa_paises"]=mp.newMap(390,maptype="PROBING") #Estructura para guardar los datos de los países
-    data["mapa_fechas"]=mp.newMap(60000,maptype="CHAINING") #
-    data["mapa_ciudades"]=mp.newMap(10000,maptype="CHAINING") #
-    
-    return data
+    catalog["mapa_ids"] = mp.newMap(60000,maptype="CHAINING",loadfactor=8) #Estructura para guardar los datos correspondientes a los ID's 
+    catalog["mapa_paises"] = mp.newMap(390,maptype="PROBING") #Estructura para guardar los datos de los países
+    catalog["mapa_fechas"] = mp.newMap(60000,maptype="CHAINING") #
+    catalog["mapa_ciudades"] = mp.newMap(10000,maptype="CHAINING") #  
+    catalog["habilidades_id"] = mp.newMap(10000,maptype="CHAINING") #  
+    catalog["habilidades_name"] = mp.newMap(10000,maptype="CHAINING") #  
+
+    return catalog
 
 
 # Funciones para agregar informacion al modelo
 
-def add_data_jobs(data_structs, job):
+def add_data_jobs(catalog, job):
     """
     Función para agregar nuevos elementos a la lista
     """
     #TODO: Crear la función para agregar elementos
+    #IDs
+    jobs_id = catalog['mapa_ids']
+    idr = job['id']
+        
+    existid = mp.contains(jobs_id, idr)
+    if existid:
+        entry = mp.get(jobs_id, idr)
+        id = me.getValue(entry)
+    else:
+        id = new_jobs_id(idr)
+        mp.put(jobs_id, idr, id)
+    lt.addLast(id['row'], job)
     
-    ids=data_structs["mapa_ids"]
-    id_job=job["id"]
-    mapa_dentro_id=mp.newMap(8)
-    
+    """
     #Ofertas
     mp.put(mapa_dentro_id,"oferta",job)
     mp.put(ids,id_job,mapa_dentro_id)
     
     #Países
-    paises=data_structs["mapa_paises"]
+    paises=catalog["mapa_paises"]
     pais_job=job["country_code"]
     
     #Revisa que exista el país en el mapa de países. Si se obtiene que no existe (False), se crea
@@ -85,19 +104,74 @@ def add_data_jobs(data_structs, job):
     mapi=mp.get(paises,pais_job)
     
     lista_paises=me.getValue(mapi)
-    lt.addLast(lista_paises,job)        
-        
-        
-        
+    lt.addLast(lista_paises,job) 
+    """   
+
+def new_jobs_id(idr):
+    """
+    Esta funcion crea la estructura de libros asociados
+    a un año.
+    """
+    entry = {'id': "", "row": None}
+    entry['id'] = idr
+    entry['row'] = lt.newList('ARRAY_LIST')
+    return entry    
+           
     
-    
-    
-def add_data_skills(data_structs, data):
+def add_data_skills(catalog, row):
     """
     Función para agregar nuevos elementos a la lista
     """
-    #TODO: Crear la función para agregar elementos a una lista
-    pass
+    # Crear mapa de habilidades segun el id
+    skills_id = catalog['habilidades_id']
+    idr = row['id']
+        
+    existid = mp.contains(skills_id, idr)
+    if existid:
+        entry = mp.get(skills_id, idr)
+        id = me.getValue(entry)
+    else:
+        id = new_skills_id(idr)
+        mp.put(skills_id, idr, id)
+    lt.addLast(id['row'], row)
+
+    
+    #Crear mapa de habilidades segun nombre de la habilidad
+    try:
+        skills_name = catalog['habilidades_name']
+        namer = row['name']
+        
+        existname = mp.contains(skills_name, namer)
+        if existname:
+            entry = mp.get(skills_name, namer)
+            name = me.getValue(entry)
+        else:
+            name = new_skills_name(namer)
+            mp.put(skills_name, namer, name)
+        lt.addLast(name['row'], row)
+    except Exception:
+        return None
+    
+def new_skills_id(idr):
+    """
+    Esta funcion crea la estructura de libros asociados
+    a un año.
+    """
+    entry = {'id': "", "row": None}
+    entry['id'] = idr
+    entry['row'] = lt.newList('ARRAY_LIST')
+    return entry
+
+def new_skills_name(namer):
+    """
+    Esta funcion crea la estructura de libros asociados
+    a un año.
+    """
+    entry = {'id': "", "row": None}
+    entry['name'] = namer
+    entry['row'] = lt.newList('ARRAYLIST')
+    return entry
+
 def add_data_employment_types(data_structs, data):
     """
     Función para agregar nuevos elementos a la lista
@@ -124,6 +198,12 @@ def new_data(id, info):
 
 
 # Funciones de consulta
+
+def jobs_id_size(catalog):
+    """
+    Numero de autores en el catalogo
+    """
+    return mp.size(catalog['mapa_ids'])
 
 def get_data(data_structs, id):
     """

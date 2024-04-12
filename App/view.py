@@ -150,8 +150,23 @@ def print_req_4(control):
         Función que imprime la solución del Requerimiento 4 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 4
-    pass
+    codigo_pais = input("Ingrese el código del país: ")
+    fecha1 = input("Ingrese la fecha de inicio: ")
+    fecha2 = input("Ingrese la fecha de fin: ")
+    respuesta = controller.req_4(control,codigo_pais,fecha1,fecha2)
 
+    filas = [
+    ["Total Ofertas", respuesta["total_ofertas"]],
+    ["Total Empresas", respuesta["total_empresas"]],
+    ["Total Ciudades", respuesta["total_ciudades"]],
+    ["Ciudad Mayor Ofertas", f"{list(respuesta['ciudad_mayor_ofertas'].keys())[0]} ({list(respuesta['ciudad_mayor_ofertas'].values())[0]})"],
+    ["Ciudad Menor Ofertas", f"{list(respuesta['ciudad_menor_ofertas'].keys())[0]} ({list(respuesta['ciudad_menor_ofertas'].values())[0]})"],
+    ["Empresa Max Ofertas", f"{list(respuesta['empresa_max_ofertas'].keys())[0]} ({list(respuesta['empresa_max_ofertas'].values())[0]})"],
+    ["Empresa Min Ofertas", f"{list(respuesta['empresa_min_ofertas'].keys())[0]} ({list(respuesta['empresa_min_ofertas'].values())[0]})"]
+]
+
+# Tabular los datos utilizando tabulate
+    tabla = tabulate(filas, headers=["Categoría", "Valor"], tablefmt="grid")
 
 def print_req_5(list, num):
     """
@@ -315,8 +330,8 @@ if __name__ == "__main__":
         
         elif int(inputs) == 2: # REQUERIMIENTO 1 --------------------------------------------------------------------
             
-            num = input('Cuantas ofertas desea visualizar ')            
-            pais = input('Por cúal país desea filtrar?\nIngresar código de país\n')
+            num = input('¿Cuántas ofertas desea visualizar): ')            
+            pais = input('¿Por cuál país desea filtrar?\nIngresar código de país\n')
             experiencia = input (Req1OP)
             ans = controller.set_country_experience(control, pais, experiencia, memflag = mem)
             control = ans[0]

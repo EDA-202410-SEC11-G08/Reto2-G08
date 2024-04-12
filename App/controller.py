@@ -235,12 +235,16 @@ def get_jobs_by_company_and_date(control, company_name, start_date, end_date):
 
 
 
-def req_4(control):
+def req_4(control,codigo_pais,fecha1,fecha2):
     """
     Retorna el resultado del requerimiento 4
     """
     # TODO: Modificar el requerimiento 4
-    pass
+    start_time = get_time()
+    res= model.req4(control["model"],codigo_pais,fecha1,fecha2)
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
+    return res,deltaTime
 
 
 def set_city_date(control, ciudad, fecha1, fecha2, memflag=True): # REQUERIMIENTO 5 ----------------------------------------------------------------------

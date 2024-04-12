@@ -377,13 +377,56 @@ def filter_jobs_by_company_and_date(catalog, company_name, start_date, end_date)
 
 
 
-def req_4(data_structs):
+def req4(catalog, codigo_pais, fecha1, fecha2):
     """
-    Función que soluciona el requerimiento 4
+    Función que filtra las ofertas de trabajo por país y rango de fechas,
+    cuenta el número total de ofertas, empresas y ciudades, y identifica
+    la ciudad con mayor y menor número de ofertas.
     """
-    # TODO: Realizar el requerimiento 4
-    pass
-
+    # Diccionario para contar ofertas por ciudad
+    contador_ciudades = {}
+    # Diccionario para contar ofertas por empresa
+    empresas = {}
+    ofertasmax = 0
+    empresamax = None
+    empresamin = None
+    ofertasmin = 0
+    
+    # Iterar sobre todas las ciudades en el país
+    for ciudad in mp.keySet(catalog['mapa_ciudades']):
+        if me.getValue(mp.get(catalog['mapa_ciudades'],ciudad))['pais'] == codigo_pais:
+            jobs_city = me.getValue(mp.get(catalog['mapa_ciudades'],ciudad))['jobs']
+            for job in lt.iterator(jobs_city):
+                if flt_rango_fechas(job, fecha1, fecha2): # Filtrar ofertas entre las fechas deseadas
+                    if ciudad not in contador_ciudades:
+                        contador_ciudades[ciudad] = 1
+                    else:
+                        contador_ciudades[ciudad] += 1
+                    
+                    if job['company_name'] in empresas:
+                        empresas[job['company_name']] += 1
+                        if ofertasmax < empresas[job['company_name']]:
+                            ofertasmax = empresas[job['company_name']]
+                            empresamax = job['company_name']
+                    else:
+                        empresas[job['company_name']] = 1
+    
+    # Identificar la ciudad con mayor y menor número de ofertas
+    ciudad_mayor_ofertas = max(contador_ciudades, key=contador_ciudades.get)
+    ciudad_menor_ofertas = min(contador_ciudades, key=contador_ciudades.get)
+    
+    # Preparar la respuesta
+    respuesta = {
+        "total_ofertas": sum(contador_ciudades.values()),
+        "total_empresas": len(empresas),
+        "total_ciudades": len(contador_ciudades),
+        "ciudad_mayor_ofertas": {ciudad_mayor_ofertas: contador_ciudades[ciudad_mayor_ofertas]},
+        "ciudad_menor_ofertas": {ciudad_menor_ofertas: contador_ciudades[ciudad_menor_ofertas]},
+        "empresa_max_ofertas": {empresamax: ofertasmax},
+        "empresa_min_ofertas": {empresamin: ofertasmin}
+    }
+    
+    return respuesta 
 
 def sort_city_date(catalog, ciudad, fecha1, fecha2): # REQUERIMIENTO 5 -------------------------------------------------
     """
@@ -433,29 +476,199 @@ def sort_city_date(catalog, ciudad, fecha1, fecha2): # REQUERIMIENTO 5 ---------
         
         return catalog, jobsfsize, max, min 
 
-def req_6(data_structs):
+def req_6(ofertas, N, nivel_experticia, año):
     """
     Función que soluciona el requerimiento 6
     """
     # TODO: Realizar el requerimiento 6
-    pass
+    # Filtrar ofertas por año y nivel de experiencia
+    ofertas_filtradas = [oferta for oferta in ofertas if oferta['año'] == año and (nivel_experticia == 'indiferente' or oferta['experiencia'] == nivel_experticia)]
+    
+    # Diccionario para contar ofertas por ciudad
+    contador_ciudades = {}
+    # Diccionario para contar empresas por ciudad
+    empresas_ciudad = {}
+    # Diccionario para almacenar la información de las ciudades
+    info_ciudades = {}
+    
+    for oferta in ofertas_filtradas:
+        ciudad = oferta['ciudad']
+        if ciudad not in contador_ciudades:
+            contador_ciudades[ciudad] = 1
+            empresas_ciudad[ciudad] = {oferta['nombre_empresa']: 1}
+            info_ciudades[ciudad] = {'total_ofertas': 1, 'empresas': 1, 'salario_promedio': oferta['salario'], 'mejor_oferta': oferta, 'peor_oferta': oferta}
+        else:
+            contador_ciudades[ciudad] += 1
+            if oferta['nombre_empresa'] not in empresas_ciudad[ciudad]:
+                empresas_ciudad[ciudad][oferta['nombre_empresa']] = 1
+            else:
+                empresas_ciudad[ciudad][oferta['nombre_empresa']] += 1
+            info_ciudades[ciudad]['total_ofertas'] += 1
+            info_ciudades[ciudad]['empresas'] = len(empresas_ciudad[ciudad])
+            info_ciudades[ciudad]['salario_promedio'] = (info_ciudades[ciudad]['salario_promedio'] + oferta['salario']) / 2
+            if oferta['salario'] > info_ciudades[ciudad]['mejor_oferta']['salario']:
+                info_ciudades[ciudad]['mejor_oferta'] = oferta
+            if oferta['salario'] < info_ciudades[ciudad]['peor_oferta']['salario']:
+                info_ciudades[ciudad]['peor_oferta'] = oferta
+    
+    # Ordenar ciudades por número de ofertas
+    ciudades_ordenadas = sorted(info_ciudades.items(), key=lambda x: x[1]['total_ofertas'], reverse=True)
+    
+    # Preparar la respuesta
+    respuesta = {
+        "total_ciudades": len(ciudades_ordenadas),
+        "total_empresas": sum(info_ciudades[ciudad]['empresas'] for ciudad in info_ciudades),
+        "total_ofertas": sum(info_ciudades[ciudad]['total_ofertas'] for ciudad in info_ciudades),
+        "ciudad_mayor_ofertas": ciudades_ordenadas[0][0],
+        "ciudad_menor_ofertas": ciudades_ordenadas[-1][0],
+        "ciudades": []
+    }
+    
+    for ciudad, info in ciudades_ordenadas:
+        if len(respuesta['ciudades']) < N:
+            respuesta['ciudades'].append({
+                "nombre_ciudad": ciudad,
+                "pais": info['pais'],
+                "total_ofertas": info['total_ofertas'],
+                "salario_promedio": info['salario_promedio'],
+                "empresas": info['empresas'],
+                "empresa_max_ofertas": max(empresas_ciudad[ciudad   ].items(), key=lambda x: x[1])[0],
+                "mejor_oferta": info['mejor_oferta'],
+                "peor_oferta": info['peor_oferta']
+            })
+    
+    return respuesta
 
 
-def req_7(data_structs): # REQUERIMIENTO 7 -----------------------------------------------------------------------------------------
+def req_7(ofertas, N, año, mes): # REQUERIMIENTO 7 -----------------------------------------------------------------------------------------
     """
     Función que soluciona el requerimiento 7
     """
     # TODO: Realizar el requerimiento 7
+
+    # Filtrar ofertas por año y mes
+    ofertas_filtradas = [oferta for oferta in ofertas if oferta['año'] == año and oferta['mes'] == mes]
     
-    pass
+    # Diccionario para contar ofertas por país y ciudad
+    contador_paises = {}
+    contador_ciudades = {}
+    # Diccionario para almacenar la información de las habilidades por nivel de experiencia
+    info_habilidades = {'junior': {}, 'mid': {}, 'senior': {}}
+    
+    for oferta in ofertas_filtradas:
+        pais = oferta['pais']
+        ciudad = oferta['ciudad']
+        experiencia = oferta['experiencia']
+        
+        if pais not in contador_paises:
+            contador_paises[pais] = 1
+            contador_ciudades[ciudad] = 1
+        else:
+            contador_paises[pais] += 1
+            contador_ciudades[ciudad] += 1
+        
+        # Contar habilidades por nivel de experiencia
+        for habilidad in oferta['habilidades']:
+            if habilidad not in info_habilidades[experiencia]:
+                info_habilidades[experiencia][habilidad] = 1
+            else:
+                info_habilidades[experiencia][habilidad] += 1
+    
+    # Ordenar países y ciudades por número de ofertas
+    paises_ordenados = sorted(contador_paises.items(), key=lambda x: x[1], reverse=True)
+    ciudades_ordenadas = sorted(contador_ciudades.items(), key=lambda x: x[1], reverse=True)
+    
+    # Preparar la respuesta
+    respuesta = {
+        "total_ofertas": len(ofertas_filtradas),
+        "total_ciudades": len(contador_ciudades),
+        "pais_mayor_ofertas": paises_ordenados[0][0],
+        "ciudad_mayor_ofertas": ciudades_ordenadas[0][0],
+        "info_habilidades": {}
+    }
+    
+    for nivel in info_habilidades:
+        habilidades_ordenadas = sorted(info_habilidades[nivel].items(), key=lambda x: x[1], reverse=True)
+        respuesta['info_habilidades'][nivel] = {
+            "total_habilidades": len(habilidades_ordenadas),
+            "habilidad_mas_solicitada": habilidades_ordenadas[0][0],
+            "habilidad_menos_solicitada": habilidades_ordenadas[-1][0],
+            "nivel_promedio": sum(info_habilidades[nivel].values()) / len(info_habilidades[nivel]),
+            "empresas": {},
+            "empresa_max_ofertas": {},
+            "empresa_min_ofertas": {}
+        }
+    
+    # Aquí se debe completar la lógica para calcular el conteo de empresas, la empresa con mayor número de ofertas, y la empresa con menor número de ofertas para cada nivel de experiencia.
+    # Esto requiere un análisis adicional de las ofertas filtradas por nivel de experiencia y país/ciudad.
+    
+    return respuesta
 
 
-def req_8(data_structs):
+def req_8(  ofertas, nivel_experticia, divisa, fecha_inicial, fecha_final):
+
     """
     Función que soluciona el requerimiento 8
     """
     # TODO: Realizar el requerimiento 8
-    pass
+    # Filtrar ofertas por nivel de experticia, divisa y rango de fechas
+    ofertas_filtradas = [oferta for oferta in ofertas if (nivel_experticia == 'indiferente' or oferta['experiencia'] == nivel_experticia) and oferta['divisa'] == divisa and fecha_inicial <= oferta['fecha'] <= fecha_final]
+    
+    # Diccionario para contar ofertas por país y ciudad
+    contador_paises = {}
+    contador_ciudades = {}
+    # Diccionario para almacenar la información de las ofertas por país
+    info_paises = {}
+    
+    for oferta in ofertas_filtradas:
+        pais = oferta['pais']
+        ciudad = oferta['ciudad']
+        
+        if pais not in contador_paises:
+            contador_paises[pais] = 1
+            contador_ciudades[ciudad] = 1
+            info_paises[pais] = {'total_ofertas': 1, 'empresas': {oferta['nombre_empresa']: 1}, 'salario_promedio': oferta['salario'], 'habilidades': oferta['habilidades']}
+        else:
+            contador_paises[pais] += 1
+            contador_ciudades[ciudad] += 1
+            info_paises[pais]['total_ofertas'] += 1
+            if oferta['nombre_empresa'] not in info_paises[pais]['empresas']:
+                info_paises[pais]['empresas'][oferta['nombre_empresa']] = 1
+            else:
+                info_paises[pais]['empresas'][oferta['nombre_empresa']] += 1
+            info_paises[pais]['salario_promedio'] = (info_paises[pais]['salario_promedio'] + oferta['salario']) / 2
+            info_paises[pais]['habilidades'].extend(oferta['habilidades'])
+    
+    # Ordenar países por promedio de oferta salarial
+    paises_ordenados = sorted(info_paises.items(), key=lambda x: x[1]['salario_promedio'], reverse=True)
+    
+    # Preparar la respuesta
+    respuesta = {
+        "total_empresas": len(set(empresa for pais in info_paises.values() for empresa in pais['empresas'].keys())),
+        "total_ofertas": sum(info_paises[pais]['total_ofertas'] for pais in info_paises),
+        "total_paises": len(contador_paises),
+        "total_ciudades": len(contador_ciudades),
+        "paises": []
+    }
+    
+    for pais, info in paises_ordenados:
+        if len(respuesta['paises']) < 10:
+            respuesta['paises'].append({
+                "nombre_pais": pais,
+                "promedio_salario": info['salario_promedio'],
+                "total_empresas": len(info['empresas']),
+                "total_ofertas": info['total_ofertas'],
+                "total_ofertas_rango_salarial": sum(1 for oferta in ofertas_filtradas if oferta['pais'] == pais and oferta['tipo_salario'] == 'rango'),
+                "total_ofertas_valor_fijo": sum(1 for oferta in ofertas_filtradas if oferta['pais'] == pais and oferta['tipo_salario'] == 'valor_fijo'),
+                "total_ofertas_sin_salario": sum(1 for oferta in ofertas_filtradas if oferta['pais'] == pais and oferta['tipo_salario'] == 'sin_salario'),
+                "habilidades_promedio": len(info['habilidades']) / info['total_ofertas']
+            })
+    
+    # Aquí se debe completar la lógica para calcular el país con mayor y menor oferta salarial.
+    # Esto requiere un análisis adicional de las ofertas filtradas por país y nivel de experiencia.
+    
+    return respuesta
+
 
 
 def selectDataSize(algo_opt):

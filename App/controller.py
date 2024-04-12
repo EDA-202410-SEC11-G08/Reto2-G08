@@ -32,79 +32,111 @@ El controlador se encarga de mediar entre la vista y el modelo.
 
 csv.field_size_limit(2147483647)
 
+Route = "small-"
+
 def new_controller():
     """
     Crea una instancia del modelo
     """
-    #TODO: Llamar la función del modelo que crea las estructuras de datos
-    
-    return model.new_data_structs()
+    #TODO: Llamar la función del modelo que crea las estructuras de datos - DONE
+
+    control = {
+        'model': None
+    }
+    control['model'] = model.new_catalog()
+    return control    
     
 
-# Funciones para la carga de datos
+# Funciones para la carga de datos ---------------------------------------------------------------------------------
 
-def load_data(control, filename):
+def load_data(control, memflag = True):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
+    catalog = control['model']
     
-    jobs=open(filename+"-jobs.csv",encoding="utf-8")
-    load_data_jobs(control,jobs)
+    start_time = get_time()
+    if memflag is True:
+        tracemalloc.start()
+        start_memory = get_memory()
+
+    load_data_jobs(catalog)
+    #load_data_skills(catalog)
+    #load_data_employment(catalog)
+    #load_data_multilocation(catalog)
     
-    skills=open(filename+"-skills.csv",encoding="utf-8")
-    load_data_skills(control,skills)
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
     
-    employment_type=open(filename+"-employments_types.csv",encoding="utf-8")
-    load_data_employment(control,employment_type)
-    
-    multilocation=open(filename+"-multilocations.csv",encoding="utf-8")
-    load_data_multilocation(control,multilocation)
+    # finaliza el proceso para medir memoria
+    if memflag is True:
+        stop_memory = get_memory()
+        tracemalloc.stop()
+        # calcula la diferencia de memoria
+        deltaMemory = delta_memory(stop_memory, start_memory)
+        # respuesta con los datos de tiempo y memoria
+        return deltaTime, deltaMemory
+
+    else:
+        # respuesta sin medir memoria
+        return deltaTime
     
   
-def load_data_jobs(control, jobs):
+def load_data_jobs(catalog):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    lectura=csv.DictReader(jobs,delimiter=";")
-    lectura.__next__()
-    for i in lectura:
-        model.add_data_jobs(control, i)
+    file = cf.data_dir + Route + 'jobs.csv'
+    input_file = csv.DictReader(open(file, encoding='utf-8'), restval= 'Desconocido', delimiter= ";")
+    for row in input_file:
+        model.add_data_jobs(catalog, row)
+    catalog['Trabajos'] = model.sort(catalog['Trabajos'], model.cmp_fecha_empresa)
+    
+    
             
 
-def load_data_skills(control, skills):
+def load_data_skills(catalog):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    lectura=csv.DictReader(skills)
-    for i in lectura:
-        model.add_data_skills(control, i)    
+    file = cf.data_dir + Route + 'skills.csv'
+    input_file =csv.DictReader(open(file, encoding='utf-8'), restval= 'Desconocido', delimiter= ";", fieldnames = ['name','level','id'])
+    for row in input_file:
+        model.add_data_skills(catalog, row)   
 
-def load_data_employment(control, employment_type):
+def load_data_employment(catalog):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    lectura=csv.DictReader(employment_type)
-    for i in lectura:
-        model.add_data_employment_types(control, i) 
-                
+    file = cf.data_dir + Route + 'employments_types.csv'
+    input_file = csv.DictReader(open(file, encoding='utf-8'), restval= 'Desconocido', delimiter= ";", fieldnames = ['type','id','currency','salary_from', 'salary_to'])
+    for row in input_file:
+        model.add_data_employment_types(catalog, row)
 
-
-def load_data_multilocation(control, multilocation):
+def load_data_multilocation(catalog):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    lectura= csv.DictReader(multilocation)
-    for i in lectura:
-        model.add_data_multilocation(control,i)
-    
+    file = cf.data_dir + Route + 'multilocations.csv'
+    input_file = csv.DictReader(open(file, encoding='utf-8'), restval= 'Desconocido', delimiter= ";", fieldnames = ['city','street','id'])
+    for row in input_file:
+        model.add_data_jobs(catalog, row)    
 
+def setDataSize(SizeOp):
+    """
+    Configura que csv se utilizara para la carga de datos
+    """
+    ans = model.selectDataSize(SizeOp)
+    DataSize = ans[0]
+    data_msg = ans[1]
+    return data_msg, DataSize
 
-# Funciones de ordenamiento
+# Funciones de ordenamiento ------------------------------------------------------------------------------------------
 
 def sort(control):
     """
@@ -114,7 +146,7 @@ def sort(control):
     pass
 
 
-# Funciones de consulta sobre el catálogo
+# Funciones de consulta sobre el catálogo -----------------------------------------------------------------------------
 
 def get_data(control, id):
     """
@@ -124,21 +156,74 @@ def get_data(control, id):
     pass
 
 
-def req_1(control):
+def set_country_experience(control, pais, experiencia, memflag = True): # REQUERIMIENTO 1 -------------------------------------------------
     """
     Retorna el resultado del requerimiento 1
+    Ingresar catalogo, pais, experiencia
     """
     # TODO: Modificar el requerimiento 1
-    pass
 
+    jobs = control["model"]
+    # Inicio de mediciones
+    start_time = get_time()
+    if memflag is True:
+        tracemalloc.start()
+        start_memory = get_memory()
+        
+    ans = model.sort_country_experience(jobs, pais, experiencia)
+    control["model"] = ans[0]
+    size = ans[1] 
+    
+    # Finalización de mediciones
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
+    
+    # finaliza el proceso para medir memoria
+    if memflag is True:
+        stop_memory = get_memory()
+        tracemalloc.stop()
+        # calcula la diferencia de memoria
+        deltaMemory = delta_memory(stop_memory, start_memory)
+        # respuesta con los datos de tiempo y memoria
+        return control, size, deltaTime, deltaMemory
 
-def req_2(control):
+    else:
+        # respuesta sin medir memoria
+        return control, size, deltaTime
+
+def set_company_city(control, empresa, ciudad, memflag = True): # REQUERIMIENTO 2 ----------------------------------
     """
     Retorna el resultado del requerimiento 2
+    Ingresar catalogo, empresa y ciudad
     """
     # TODO: Modificar el requerimiento 2
-    pass
+    jobs = control["model"]
+    # Inicio de mediciones
+    start_time = get_time()
+    if memflag is True:
+        tracemalloc.start()
+        start_memory = get_memory()
+        
+    ans = model.sort_company_city(jobs, empresa, ciudad)
+    control["model"] = ans[0]
+    size = ans[1] 
+    
+    # Finalización de mediciones
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
+    
+        # finaliza el proceso para medir memoria
+    if memflag is True:
+        stop_memory = get_memory()
+        tracemalloc.stop()
+        # calcula la diferencia de memoria
+        deltaMemory = delta_memory(stop_memory, start_memory)
+        # respuesta con los datos de tiempo y memoria
+        return control, size, deltaTime, deltaMemory
 
+    else:
+        # respuesta sin medir memoria
+        return control, size, deltaTime
 
 def req_3(control):
     """
@@ -156,13 +241,42 @@ def req_4(control):
     pass
 
 
-def req_5(control):
+def set_city_date(control, ciudad, fecha1, fecha2, memflag=True): # REQUERIMIENTO 5 ----------------------------------------------------------------------
     """
     Retorna el resultado del requerimiento 5
+    Ingresar catalogo, ciudad a investigar, fecha inicial (1) y fecha final (2)
     """
     # TODO: Modificar el requerimiento 5
-    pass
+    jobs = control["model"]
+    # Inicio de mediciones
+    start_time = get_time()
+    if memflag is True:
+        tracemalloc.start()
+        start_memory = get_memory()
+    
+    ans = model.sort_city_date(jobs, ciudad, fecha1, fecha2)
+        
+    control["model"] = ans[0]
+    size = ans[1] 
+    max, min = ans[2], ans[3]
+    
+    # Finalización de mediciones
+    stop_time = get_time()
+    deltaTime = delta_time(start_time, stop_time)
+    
+    # finaliza el proceso para medir memoria
+    if memflag is True:
+        stop_memory = get_memory()
+        tracemalloc.stop()
+        # calcula la diferencia de memoria
+        deltaMemory = delta_memory(stop_memory, start_memory)
+        # respuesta con los datos de tiempo y memoria
+        return control, size, max, min, deltaTime, deltaMemory
 
+    else:
+        # respuesta sin medir memoria
+        return control, size, max, min, deltaTime
+     
 def req_6(control):
     """
     Retorna el resultado del requerimiento 6
@@ -186,6 +300,11 @@ def req_8(control):
     # TODO: Modificar el requerimiento 8
     pass
 
+def jobs_id_size(control):
+    """
+    Numero de id de ofertas en el catalogo
+    """
+    return model.jobs_id_size(control['model'])
 
 # Funciones para medir tiempos de ejecucion
 

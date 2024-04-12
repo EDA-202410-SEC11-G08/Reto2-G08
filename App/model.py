@@ -36,68 +36,226 @@ from DISClib.Algorithms.Sorting import insertionsort as ins
 from DISClib.Algorithms.Sorting import selectionsort as se
 from DISClib.Algorithms.Sorting import mergesort as merg
 from DISClib.Algorithms.Sorting import quicksort as quk
+from DISClib.Algorithms.Sorting import customsort as cus
+from datetime import datetime as date
 assert cf
 
 
 
 # Construccion de modelos
+sort_algorithm = cus #SE SELECCIONA TIMSORT COMO ALGORITMO POR DEFECTO
+# construccion de modelos
 
-
-def new_data_structs():
+def new_catalog():
     """
     Inicializa las estructuras de datos del modelo. Las crea de
     manera vacía para posteriormente almacenar la información.
     """
     #TODO: Inicializar las estructuras de datos
+    catalog = {'Trabajos': None,
+               'mapa_ids': None,
+               'mapa_paises': None,
+               'mapa_fechas': None,
+               'mapa_ciudades': None,
+               'habilidades_id': None,
+               'habilidades_name': None,
+               'employment_types_id': None,
+               'multilocations_id': None,}
     
-    data={}
-    data["mapa_ids"]=mp.newMap(60000,maptype="CHAINING") #Estructura para guardar los datos correspondientes a los ID's 
-    data["mapa_paises"]=mp.newMap(390,maptype="PROBING") #Estructura para guardar los datos de los países
-    data["mapa_fechas"]=mp.newMap(60000,maptype="CHAINING") #
-    data["mapa_ciudades"]=mp.newMap(10000,maptype="CHAINING") #
-    
-    return data
+    # Lista con todos los trabajos encontrados en el archivo de carga
+    catalog['Trabajos'] = lt.newList('ARRAY_LIST', compareJobIds)
+    # Indices por diferentes criterios para llegar a la info consultada, no replican la info, referencian los libros de la lista
+    # Estructura para guardar los datos correspondientes a los ID's
+    catalog["mapa_ids"] = mp.newMap(60000,
+                                    maptype="CHAINING",
+                                    loadfactor=8)
+    # Estructura para guardar datos según el país
+    catalog["mapa_paises"] = mp.newMap(390,
+                                       maptype="CHAINING",
+                                       loadfactor=4)
+    # Estructura para guardar datos segun la ciudad
+    catalog["mapa_ciudades"] = mp.newMap(10000,
+                                         maptype="CHAINING",
+                                         loadfactor=4)
+    # Estrcutura para guardar datos segun empresa
+    catalog["mapa_empresas"] = mp.newMap(10000,
+                                         maptype="CHAINING",
+                                         loadfactor=4)
+    # Estrcutura para guardar datos segun experiencia
+    catalog["mapa_experiencia"] = mp.newMap(10000,
+                                         maptype="CHAINING",
+                                         loadfactor=4)
+
+    #catalog["mapa_fechas"] = mp.newMap(60000,maptype="CHAINING") # No seguro si usar este
+
+    # EStructuras de datos para guardar info del csv skills
+    catalog["habilidades_id"] = mp.newMap(10000,
+                                          maptype="CHAINING",
+                                          loadfactor = 4) 
+    catalog["habilidades_name"] = mp.newMap(10000,maptype="CHAINING",
+                                            loadfactor = 4) 
+    # EStructuras de datos para guardar info del csv emlpoyment types
+    catalog['employment_types_id'] = mp.newMap(10000,
+                                               maptype = "CHAINING",
+                                               loadfactor = 4)
+    # EStructuras de datos para guardar info del csv multilocation
+    catalog['multilocations_id'] = mp.newMap(10000,
+                                               maptype = "CHAINING",
+                                               loadfactor = 4)
+    return catalog
 
 
 # Funciones para agregar informacion al modelo
 
-def add_data_jobs(data_structs, job):
+def add_data_jobs(catalog, job):
     """
     Función para agregar nuevos elementos a la lista
     """
     #TODO: Crear la función para agregar elementos
+    #IDs
+    lt.addLast(catalog['Trabajos'], job)
+    mp.put(catalog['mapa_ids'],job['id'], job)
+    add_job_country(catalog, job['country_code'], job)
+    add_job_city(catalog, job['city'], job)
+    add_job_company(catalog, job['company_name'], job) # empresas
+    add_job_experience(catalog, job['experience_level'], job)    # experiencia
     
-    ids=data_structs["mapa_ids"]
-    id_job=job["id"]
-    mapa_dentro_id=mp.newMap(8)
+def add_job_country(catalog, country_code, job):
+    countries = catalog['mapa_paises']
+    existcountry = mp.contains(countries, country_code)
+    if existcountry:
+        entry = mp.get(countries, country_code)
+        country = me.getValue(entry)
+    else:
+        country = new_country(country_code)
+        mp.put(countries, country_code, country)
+    lt.addLast(country['jobs'], job)
+    country['size'] = lt.size(country['jobs'])
     
-    #Ofertas
-    mp.put(mapa_dentro_id,"oferta",job)
-    mp.put(ids,id_job,mapa_dentro_id)
+def add_job_city(catalog, city, job):
+    cities = catalog['mapa_ciudades']
+    existcity = mp.contains(cities, city)
+    if existcity:
+        entry = mp.get(cities, city)
+        citytemp = me.getValue(entry)
+    else:
+        citytemp = new_city(city)
+        mp.put(cities, city, citytemp)
+    lt.addLast(citytemp['jobs'], job)  
+    citytemp['size'] = lt.size(citytemp['jobs'])
     
-    #Países
-    paises=data_structs["mapa_paises"]
-    pais_job=job["country_code"]
-    
-    #Revisa que exista el país en el mapa de países. Si se obtiene que no existe (False), se crea
-    if not mp.contains(paises,pais_job):
-        mp.put(paises,pais_job,lt.newList("ARRAY_LIST"))
-    mapi=mp.get(paises,pais_job)
-    
-    lista_paises=me.getValue(mapi)
-    lt.addLast(lista_paises,job)        
+def add_job_company(catalog, company, job):
+    companies = catalog['mapa_empresas']
+    existcompany = mp.contains(companies, company)
+    if existcompany:
+        entry = mp.get(companies, company)
+        companytemp = me.getValue(entry)
+    else:
+        companytemp = new_company(company)
+        mp.put(companies, company, companytemp)
+    lt.addLast(companytemp['jobs'], job)  
+    companytemp['size'] = lt.size(companytemp['jobs'])
+
+def add_job_experience(catalog, experience, job):
+    experiences = catalog['mapa_experiencia']
+    exist = mp.contains(experiences, experience)
+    if exist:
+        entry = mp.get(experiences, experience)
+        experiencetemp = me.getValue(entry)
+    else:
+        experiencetemp = new_experience(experience)
+        mp.put(experiences, experience, experiencetemp)
+    lt.addLast(experiencetemp['jobs'], job)  
+    experiencetemp['size'] = lt.size(experiencetemp['jobs'])
+      
+
+def new_country(country_code):
+    country = {'country_code': "",
+               "jobs": None,
+               "size": 0}
+    country['country_code'] = country_code
+    country['jobs'] = lt.newList('ARRAY_LIST', compareCountry)
+    return country
         
-        
-        
+ 
+def new_city(city_in):
+    city = {'city': "",
+               "jobs": None,
+               "size": 0}
+    city['city'] = city_in
+    city['jobs'] = lt.newList('ARRAY_LIST', compareCity)  
+    return city 
+
+def new_company(company_in):
+    company = {'company': "",
+               "jobs": None,
+               "size": 0}
+    company['city'] = company_in
+    company['jobs'] = lt.newList('ARRAY_LIST')
+    return company 
+
+def new_experience(experience_in):
+    experience = {'company': "",
+               "jobs": None,
+               "size": 0}
+    experience['city'] = experience_in
+    experience['jobs'] = lt.newList('ARRAY_LIST')
+    return experience            
     
-    
-    
-def add_data_skills(data_structs, data):
+def add_data_skills(catalog, row):
     """
     Función para agregar nuevos elementos a la lista
     """
-    #TODO: Crear la función para agregar elementos a una lista
-    pass
+    # Crear mapa de habilidades segun el id
+    skills_id = catalog['habilidades_id']
+    idr = row['id']
+        
+    existid = mp.contains(skills_id, idr)
+    if existid:
+        entry = mp.get(skills_id, idr)
+        id = me.getValue(entry)
+    else:
+        id = new_skills_id(idr)
+        mp.put(skills_id, idr, id)
+    lt.addLast(id['row'], row)
+
+    
+    #Crear mapa de habilidades segun nombre de la habilidad
+    try:
+        skills_name = catalog['habilidades_name']
+        namer = row['name']
+        
+        existname = mp.contains(skills_name, namer)
+        if existname:
+            entry = mp.get(skills_name, namer)
+            name = me.getValue(entry)
+        else:
+            name = new_skills_name(namer)
+            mp.put(skills_name, namer, name)
+        lt.addLast(name['row'], row)
+    except Exception:
+        return None
+    
+def new_skills_id(idr):
+    """
+    Esta funcion crea la estructura de libros asociados
+    a un año.
+    """
+    entry = {'id': "", "row": None}
+    entry['id'] = idr
+    entry['row'] = lt.newList('ARRAY_LIST')
+    return entry
+
+def new_skills_name(namer):
+    """
+    Esta funcion crea la estructura de libros asociados
+    a un año.
+    """
+    entry = {'id': "", "row": None}
+    entry['name'] = namer
+    entry['row'] = lt.newList('ARRAYLIST')
+    return entry
+
 def add_data_employment_types(data_structs, data):
     """
     Función para agregar nuevos elementos a la lista
@@ -125,6 +283,12 @@ def new_data(id, info):
 
 # Funciones de consulta
 
+def jobs_id_size(catalog):
+    """
+    Numero de id de ofertas en el catalogo
+    """
+    return mp.size(catalog['mapa_ids'])
+
 def get_data(data_structs, id):
     """
     Retorna un dato a partir de su ID
@@ -141,22 +305,57 @@ def data_size(data_structs):
     pass
 
 
-def req_1(data_structs):
+def sort_country_experience(catalog, pais, experiencia): # REQUERIMIENTO 1 --------------------------------------------------------------------------
     """
     Función que soluciona el requerimiento 1
     """
     # TODO: Realizar el requerimiento 1
+    jobsf = lt.newList("ARRAY_LIST")
     
+    jobs_p = me.getValue(mp.get(catalog['mapa_paises'], pais))["jobs"]    # pais
+    jobs_e = me.getValue(mp.get(catalog['mapa_experiencia'], experiencia))["jobs"]    # experiencia
+  
+    if (lt.size(jobs_p) <= lt.size(jobs_e)): # Revisar camino con menor cantidad de comparaciones
+        for job in lt.iterator(jobs_e):
+            if (flt_experiencia(job, experiencia) == True): # REALIZAR FUNCIONES DE FILTRADO Y VERIFICAR OUTPUT
+                lt.addLast(jobsf,job)
+    else: 
+        for job in lt.iterator(jobs_e):
+            if (flt_pais(job, pais) == True):
+                lt.addLast(jobsf, job)
     
-    pass
+    jobsfsize = lt.size(jobsf) 
+    if jobsfsize != 0:
+        jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+        catalog['REQ1'] = jobsf   
+        
+    return catalog, jobsfsize   
 
-
-def req_2(data_structs):
+def sort_company_city(catalog, empresa, ciudad): # REQUERIMIENTO 2 ----------------------------------------------------
     """
     Función que soluciona el requerimiento 2
     """
     # TODO: Realizar el requerimiento 2
-    pass
+    jobsf = lt.newList("ARRAY_LIST")
+
+    jobs_c = me.getValue(mp.get(catalog['mapa_ciudades'], ciudad))["jobs"]    # Ciudad
+    jobs_e = me.getValue(mp.get(catalog['mapa_empresas'], empresa))["jobs"]  # Empresa
+    
+    if (lt.size(jobs_c) <= lt.size(jobs_e)): # Revisar camino con menor cantidad de comparaciones
+        for job in lt.iterator(jobs_c):
+            if (flt_empresa(job, empresa) == True):
+                lt.addLast(jobsf,job)
+    else: 
+        for job in lt.iterator(jobs_e):
+            if (flt_ciudad(job, ciudad) == True):
+                lt.addLast(jobsf, job)
+    
+    jobsfsize = lt.size(jobsf) 
+    if jobsfsize != 0:
+        jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+        catalog['REQ2'] = jobsf   
+        
+    return catalog, jobsfsize 
 
 
 def req_3(data_structs):
@@ -175,13 +374,53 @@ def req_4(data_structs):
     pass
 
 
-def req_5(data_structs):
+def sort_city_date(catalog, ciudad, fecha1, fecha2): # REQUERIMIENTO 5 -------------------------------------------------
     """
     Función que soluciona el requerimiento 5
     """
     # TODO: Realizar el requerimiento 5
-    pass
 
+    jobs = mp.get(catalog['mapa_ciudades'], ciudad)
+    jobsf = lt.newList('ARRAY_LIST')
+    
+    empresas = {} #Diccionario con nombre de empresa y # de ofertas
+    ofertasmax = 0
+    empresamax = None
+    empresamin = None
+    
+    if jobs:
+        #recuperar lista de ofertas
+        jobs_city = me.getValue(jobs)['jobs']
+        for job in lt.iterator(jobs_city):
+            if (flt_rango_fechas(job, fecha1, fecha2) == True): # Filtrar ofertas entre las fechas deseadas
+                lt.addLast(jobsf, job)
+                 
+                if job['company_name'] in empresas: #Contador de ofertas por empresa para saber maximo y minimo
+                    empresas[job['company_name']] += 1 
+                    if ofertasmax < empresas[job['company_name']]: #Identificar maximo 
+                        ofertasmax = empresas[job['company_name']]
+                        empresamax = job['company_name']                    
+                else:
+                    empresas[job['company_name']] = 1 
+                      
+        for empresa in empresas: # INCLUIR DENTRO DE 1 CICLO FOR NO 2
+            if empresas[empresa] <= ofertasmax:
+                ofertasmin = empresas[empresa]
+                empresamin = empresa   
+                
+        max = (empresamax, ofertasmax)
+        
+        if lt.size(jobsf) == 1:
+            min = max
+        else:
+            min = (empresamin, ofertasmin)
+        
+        jobsfsize = lt.size(jobsf)
+        if jobsfsize != 0:
+            jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+            catalog['REQ5'] = jobsf     
+        
+        return catalog, jobsfsize, max, min 
 
 def req_6(data_structs):
     """
@@ -191,11 +430,12 @@ def req_6(data_structs):
     pass
 
 
-def req_7(data_structs):
+def req_7(data_structs): # REQUERIMIENTO 7 -----------------------------------------------------------------------------------------
     """
     Función que soluciona el requerimiento 7
     """
     # TODO: Realizar el requerimiento 7
+    
     pass
 
 
@@ -207,6 +447,63 @@ def req_8(data_structs):
     pass
 
 
+def selectDataSize(algo_opt):
+    """
+    Función para escoger el tipo de archivo con el que se ejecuta el programa
+    """
+    #Rta por defecto
+    DataSize = 10
+    Sizemsg = "Se escogió por defecto la opción 10 - small"
+    
+    if algo_opt == 1:
+        DataSize = "10-por-"
+        Sizemsg = "Se ha escogido el tamaño 10-por"
+        
+    elif algo_opt == 2:
+        DataSize = "20-por-"
+        Sizemsg = "Se ha escogido el tamaño 20-por"
+
+    elif algo_opt == 3:
+        DataSize = "30-por-"
+        Sizemsg = "Se ha escogido el tamaño 30-por"
+
+    elif algo_opt == 4:
+        DataSize = "40-por-"
+        Sizemsg = "Se ha escogido el tamaño 40-por"
+        
+    elif algo_opt == 5:
+        DataSize = "50-por-"
+        Sizemsg = "Se ha escogido el tamaño 50-por"
+        
+    elif algo_opt == 6:
+        DataSize = "60-por-"
+        Sizemsg = "Se ha escogido el tamaño 60-por"
+        
+    elif algo_opt == 7:
+        DataSize = "70-por-"
+        Sizemsg = "Se ha escogido el tamaño 70-por"
+        
+    elif algo_opt == 8:
+        DataSize = "80-por-"
+        Sizemsg = "Se ha escogido el tamaño 80-por"
+        
+    elif algo_opt == 9:
+        DataSize = "90-por-"
+        Sizemsg = "Se ha escogido el tamaño 90-por"
+        
+    elif algo_opt == 10:
+        DataSize = "small-"
+        Sizemsg = "Se ha escogido el tamaño small-"
+        
+    elif algo_opt == 11:
+        DataSize = "medium-"
+        Sizemsg = "Se ha escogido el tamaño medium-"
+        
+    elif algo_opt == 12:
+        DataSize = "large-"
+        Sizemsg = "Se ha escogido el tamaño large-"
+    return DataSize, Sizemsg
+
 # Funciones utilizadas para comparar elementos dentro de una lista
 
 def compare(data_1, data_2):
@@ -216,6 +513,93 @@ def compare(data_1, data_2):
     #TODO: Crear función comparadora de la lista
     pass
 
+
+
+def compareJobIds(id1, id2):
+    """
+    Compara dos ids de dos trabajos
+    """
+    if (id1 == id2):
+        return 0
+    elif id1 > id2:
+        return 1
+    else:
+        return -1
+    
+
+def compareMapJobIds(id, entry):
+    """
+    Compara dos ids de libros, id es un identificador
+    y entry una pareja llave-valor
+    """
+    identry = me.getKey(entry)
+    if (int(id) == int(identry)):
+        return 0
+    elif (int(id) > int(identry)):
+        return 1
+    else:
+        return -1
+
+def compareCountry(keyname, author):
+    """
+    Compara dos nombres de autor. El primero es una cadena
+    y el segundo un entry de un map
+    """
+    authentry = me.getKey(author)
+    if (keyname == authentry):
+        return 0
+    elif (keyname > authentry):
+        return 1
+    else:
+        return -1
+
+def compareCity(keyname, author):
+    """
+    Compara dos nombres de autor. El primero es una cadena
+    y el segundo un entry de un map
+    """
+    authentry = me.getKey(author)
+    if (keyname == authentry):
+        return 0
+    elif (keyname > authentry):
+        return 1
+    else:
+        return -1
+    
+def flt_rango_fechas(oferta, fecha1, fecha2): # Filtrado por fechas - REQ 5
+    if ((date.strptime(oferta["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ") >= date.strptime(fecha1,"%Y-%m-%d")) and 
+        (date.strptime(oferta["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ") <= date.strptime(fecha2,"%Y-%m-%d"))):
+        return True
+    else: return False
+    
+def flt_experiencia(oferta, experiencia): # Filtrado REQ 1
+    if (oferta["experience_level"] == experiencia): return True
+    else: return False
+    
+def flt_pais(oferta, pais): # Filtrado REQ 1
+    if (oferta["country_code"] == pais): return True
+    else: return False
+
+def flt_empresa(oferta, empresa): # Filtrado por empresa - REQ 2
+    if oferta['company_name'] == empresa:
+        return True
+    else: return False
+
+def flt_ciudad(oferta, ciudad): # Filtrado por ciudad - REQ 2
+    if oferta['city'] == ciudad:
+        return True
+    else: return False
+
+    
+def cmp_fecha_empresa(oferta1, oferta2): #Criterio ordenamiento RQ 5 - Fecha mayor a menor, si igual, nombre de empresa de A-Z
+    if (date.strptime(oferta1["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ") > date.strptime(oferta2["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ")):
+        return True
+    elif (date.strptime(oferta1["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ") == date.strptime(oferta2["published_at"],"%Y-%m-%dT%H:%M:%S.%fZ")):
+        if (oferta1["company_name"] <= oferta2["company_name"]):
+            return True
+        else: return False
+    else: return False
+    
 # Funciones de ordenamiento
 
 
@@ -233,9 +617,9 @@ def sort_criteria(data_1, data_2):
     pass
 
 
-def sort(data_structs):
+def sort(list, cmp):
     """
     Función encargada de ordenar la lista con los datos
     """
-    #TODO: Crear función de ordenamiento
-    pass
+    return sort_algorithm.sort(list, cmp)
+    

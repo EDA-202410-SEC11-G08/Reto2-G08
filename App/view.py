@@ -118,12 +118,31 @@ def print_req_2(list, num):
     return table
 
 
-def print_req_3(control):
+# Función para imprimir el resultado del Requerimiento 3 en consola
+def print_req_3(jobs):
     """
-        Función que imprime la solución del Requerimiento 3 en consola
+    Imprime el resultado del Requerimiento 3 en consola
     """
-    # TODO: Imprimir el resultado del requerimiento 3
-    pass
+    # Verificar si se encontraron ofertas para la empresa y el período de tiempo especificados
+    if len(jobs) == 0:
+        print("No se encontraron ofertas para la empresa y el período de tiempo especificados.")
+    else:
+        # Imprimir el número total de ofertas
+        print("Número total de ofertas:", len(jobs))
+        
+        # Imprimir los detalles de cada oferta
+        for job in jobs:
+            print("Fecha de la oferta:", job['published_at'])
+            print("Título de la oferta:", job['title'])
+            print("Nivel de experiencia requerido:", job['experience_level'])
+            print("Ciudad de la empresa de la oferta:", job['city'])
+            print("País de la empresa de la oferta:", job['country_code'])
+            print("Tamaño de la empresa de la oferta:", job['company_size'])
+            print("Tipo de lugar de trabajo de la oferta:", job['workplace_type'])
+            print("Disponible a contratar ucranianos:", job['available_to_ukrainians'])
+            
+            # Imprimir un separador entre cada oferta para una mejor legibilidad
+            print("-" * 50)
 
 
 def print_req_4(control):

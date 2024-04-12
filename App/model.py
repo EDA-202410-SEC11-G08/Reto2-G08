@@ -358,12 +358,23 @@ def sort_company_city(catalog, empresa, ciudad): # REQUERIMIENTO 2 -------------
     return catalog, jobsfsize 
 
 
-def req_3(data_structs):
+# Función para filtrar las ofertas de trabajo por empresa y fecha
+def filter_jobs_by_company_and_date(catalog, company_name, start_date, end_date):  # REQUERIMIENTO 3 ----------------------------------------------------
     """
-    Función que soluciona el requerimiento 3
+    Filtra las ofertas de trabajo por empresa y fecha
     """
-    # TODO: Realizar el requerimiento 3
-    pass
+    # Lista para almacenar las ofertas que cumplen con los criterios de filtrado
+    filtered_jobs = []
+    
+    # Iterar sobre todas las ofertas en el catálogo
+    for job in catalog:
+        # Verificar si la oferta pertenece a la empresa especificada
+        # y si su fecha de publicación está dentro del rango especificado
+        if job['company_name'] == company_name and start_date <= job['published_at'] <= end_date:
+            filtered_jobs.append(job)
+    
+    return filtered_jobs
+
 
 
 def req_4(data_structs):

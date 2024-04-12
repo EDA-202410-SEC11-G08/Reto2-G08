@@ -225,12 +225,14 @@ def set_company_city(control, empresa, ciudad, memflag = True): # REQUERIMIENTO 
         # respuesta sin medir memoria
         return control, size, deltaTime
 
-def req_3(control):
+# Función para obtener las ofertas de trabajo por empresa y fecha del modelo # REQUERIMIENTO 3 ----------------------------------
+def get_jobs_by_company_and_date(control, company_name, start_date, end_date):
     """
-    Retorna el resultado del requerimiento 3
+    Obtiene las ofertas de trabajo por empresa y fecha del modelo
     """
-    # TODO: Modificar el requerimiento 3
-    pass
+    # Llamar a la función correspondiente en el modelo
+    return model.filter_jobs_by_company_and_date(control['model'], company_name, start_date, end_date)
+
 
 
 def req_4(control):

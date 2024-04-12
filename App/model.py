@@ -36,14 +36,14 @@ from DISClib.Algorithms.Sorting import insertionsort as ins
 from DISClib.Algorithms.Sorting import selectionsort as se
 from DISClib.Algorithms.Sorting import mergesort as merg
 from DISClib.Algorithms.Sorting import quicksort as quk
-from DISClib.Algorithms.Sorting import customsort as cus
+#from DISClib.Algorithms.Sorting import customsort as cus
 from datetime import datetime as date
 assert cf
 
 
 
 # Construccion de modelos
-sort_algorithm = cus #SE SELECCIONA TIMSORT COMO ALGORITMO POR DEFECTO
+#sort_algorithm = cus #SE SELECCIONA TIMSORT COMO ALGORITMO POR DEFECTO
 # construccion de modelos
 
 def new_catalog():
@@ -326,7 +326,7 @@ def sort_country_experience(catalog, pais, experiencia): # REQUERIMIENTO 1 -----
     
     jobsfsize = lt.size(jobsf) 
     if jobsfsize != 0:
-        jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+        jobsf = sa.sort(jobsf, cmp_fecha_empresa)
         catalog['REQ1'] = jobsf   
         
     return catalog, jobsfsize   
@@ -352,7 +352,7 @@ def sort_company_city(catalog, empresa, ciudad): # REQUERIMIENTO 2 -------------
     
     jobsfsize = lt.size(jobsf) 
     if jobsfsize != 0:
-        jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+        jobsf = sa.sort(jobsf, cmp_fecha_empresa)
         catalog['REQ2'] = jobsf   
         
     return catalog, jobsfsize 
@@ -428,7 +428,7 @@ def sort_city_date(catalog, ciudad, fecha1, fecha2): # REQUERIMIENTO 5 ---------
         
         jobsfsize = lt.size(jobsf)
         if jobsfsize != 0:
-            jobsf = sort_algorithm.sort(jobsf, cmp_fecha_empresa)
+            jobsf = sa.sort(jobsf, cmp_fecha_empresa)
             catalog['REQ5'] = jobsf     
         
         return catalog, jobsfsize, max, min 
@@ -632,5 +632,5 @@ def sort(list, cmp):
     """
     Función encargada de ordenar la lista con los datos
     """
-    return sort_algorithm.sort(list, cmp)
+    return sa.sort(list, cmp)
     

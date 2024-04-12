@@ -88,7 +88,7 @@ def load_data_jobs(catalog):
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    file = cf.data_dir + Route + 'jobs.csv'
+    file = cf.data_dir+ 'data/' + Route + 'jobs.csv'
     input_file = csv.DictReader(open(file, encoding='utf-8'), restval= 'Desconocido', delimiter= ";")
     for row in input_file:
         model.add_data_jobs(catalog, row)

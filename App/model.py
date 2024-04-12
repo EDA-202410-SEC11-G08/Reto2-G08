@@ -377,16 +377,18 @@ def filter_jobs_by_company_and_date(catalog, company_name, start_date, end_date)
 
 
 
+from DISClib.Utils import TADList, TADMap
+
 def req4(catalog, codigo_pais, fecha1, fecha2):
     """
     Función que filtra las ofertas de trabajo por país y rango de fechas,
     cuenta el número total de ofertas, empresas y ciudades, y identifica
     la ciudad con mayor y menor número de ofertas.
     """
-    # Diccionario para contar ofertas por ciudad
-    contador_ciudades = {}
-    # Diccionario para contar ofertas por empresa
-    empresas = {}
+    # Crear un mapa para contar ofertas por ciudad
+    contador_ciudades = TADMap.newMap(maptype='CHAINING')
+    # Crear un mapa para contar ofertas por empresa
+    empresas = TADMap.newMap(maptype='CHAINING')
     ofertasmax = 0
     empresamax = None
     empresamin = None
@@ -394,39 +396,42 @@ def req4(catalog, codigo_pais, fecha1, fecha2):
     
     # Iterar sobre todas las ciudades en el país
     for ciudad in mp.keySet(catalog['mapa_ciudades']):
-        if me.getValue(mp.get(catalog['mapa_ciudades'],ciudad))['pais'] == codigo_pais:
-            jobs_city = me.getValue(mp.get(catalog['mapa_ciudades'],ciudad))['jobs']
+        if mp.get(catalog['mapa_ciudades'], ciudad)['pais'] == codigo_pais:
+            jobs_city = lt.newList(datastructure='SINGLE_LINKED')
             for job in lt.iterator(jobs_city):
                 if flt_rango_fechas(job, fecha1, fecha2): # Filtrar ofertas entre las fechas deseadas
-                    if ciudad not in contador_ciudades:
-                        contador_ciudades[ciudad] = 1
+                    # Actualizar contador_ciudades
+                    if mp.contains(contador_ciudades, ciudad):
+                        mp.put(contador_ciudades, ciudad, mp.get(contador_ciudades, ciudad) + 1)
                     else:
-                        contador_ciudades[ciudad] += 1
+                        mp.put(contador_ciudades, ciudad, 1)
                     
-                    if job['company_name'] in empresas:
-                        empresas[job['company_name']] += 1
-                        if ofertasmax < empresas[job['company_name']]:
-                            ofertasmax = empresas[job['company_name']]
+                    # Actualizar empresas
+                    if mp.contains(empresas, job['company_name']):
+                        mp.put(empresas, job['company_name'], mp.get(empresas, job['company_name']) + 1)
+                        if ofertasmax < mp.get(empresas, job['company_name']):
+                            ofertasmax = mp.get(empresas, job['company_name'])
                             empresamax = job['company_name']
                     else:
-                        empresas[job['company_name']] = 1
+                        mp.put(empresas, job['company_name'], 1)
     
     # Identificar la ciudad con mayor y menor número de ofertas
-    ciudad_mayor_ofertas = max(contador_ciudades, key=contador_ciudades.get)
-    ciudad_menor_ofertas = min(contador_ciudades, key=contador_ciudades.get)
+    ciudad_mayor_ofertas = max(mp.keySet(contador_ciudades), key=lambda x: mp.get(contador_ciudades, x))
+    ciudad_menor_ofertas = min(mp.keySet(contador_ciudades), key=lambda x: mp.get(contador_ciudades, x))
     
     # Preparar la respuesta
     respuesta = {
-        "total_ofertas": sum(contador_ciudades.values()),
-        "total_empresas": len(empresas),
-        "total_ciudades": len(contador_ciudades),
-        "ciudad_mayor_ofertas": {ciudad_mayor_ofertas: contador_ciudades[ciudad_mayor_ofertas]},
-        "ciudad_menor_ofertas": {ciudad_menor_ofertas: contador_ciudades[ciudad_menor_ofertas]},
+        "total_ofertas": sum(mp.valueSet(contador_ciudades)),
+        "total_empresas": mp.size(empresas),
+        "total_ciudades": mp.size(contador_ciudades),
+        "ciudad_mayor_ofertas": {ciudad_mayor_ofertas: mp.get(contador_ciudades, ciudad_mayor_ofertas)},
+        "ciudad_menor_ofertas": {ciudad_menor_ofertas: mp.get(contador_ciudades, ciudad_menor_ofertas)},
         "empresa_max_ofertas": {empresamax: ofertasmax},
         "empresa_min_ofertas": {empresamin: ofertasmin}
     }
     
-    return respuesta 
+    return respuesta
+
 
 def sort_city_date(catalog, ciudad, fecha1, fecha2): # REQUERIMIENTO 5 -------------------------------------------------
     """

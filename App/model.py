@@ -377,7 +377,7 @@ def filter_jobs_by_company_and_date(catalog, company_name, start_date, end_date)
 
 
 
-from DISClib.Utils import TADList, TADMap
+#afrom DISClib.Utils import TADList, TADMap
 
 def req4(catalog, codigo_pais, fecha1, fecha2):
     """
